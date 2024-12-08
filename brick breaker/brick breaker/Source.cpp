@@ -9,13 +9,6 @@
 using namespace std;
 using namespace glm;
 
-enum DrawingMode
-{
-	Points,
-	Lines,
-	FilledTriangle
-};
-
 struct vertex
 {
 	vec3 position;
@@ -32,11 +25,15 @@ struct vertex
 GLuint InitShader(const char* vertex_shader_file_name, const char* fragment_shader_file_name);
 
 const GLint WIDTH = 600, HEIGHT = 600;
-GLuint VBO_Triangle, VBO_Cube, IBO, BasiceprogramId;
+GLuint VBO_Ball, VBO_Paddle, IBO;
+GLuint BasiceprogramId, phongProgramId, smoothProgramId;
 float mousposX;
 // transformation
 GLuint modelMatLoc, viewMatLoc, projMatLoc;
 
+bool firstStart = true;
+
+#pragma region Paddle
 
 const float paddleW = 1, paddleH = 0.2, paddleD = 0.2;
 vertex paddleVertices[];
@@ -107,9 +104,9 @@ void CreatePaddle(float posX)
 	};
 
 	// create VBO
-	glGenBuffers(1, &VBO_Cube);
+	glGenBuffers(1, &VBO_Paddle);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Cube);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Paddle);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(paddleVertices), paddleVertices, GL_DYNAMIC_DRAW);
 
 	// Index Buffer
@@ -131,7 +128,7 @@ void CreatePaddle(float posX)
 
 void BindPaddle()
 {
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Cube);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Paddle);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
@@ -144,10 +141,88 @@ void BindPaddle()
 	glEnableVertexAttribArray(2);
 }
 
+#pragma endregion 
+
+#pragma region Ball
+vector<vertex> sphere_vertices;
+void Triangle(vec3 a, vec3 b, vec3 c)
+{
+	vec3 normal = (a + b + c) / 3.0f;
+	sphere_vertices.push_back(vertex(a, a));
+	sphere_vertices.push_back(vertex(b, b));
+	sphere_vertices.push_back(vertex(c, c));
+}
+void dividTriangle(vec3 a, vec3 b, vec3 c, int itertions)
+{
+	if (itertions > 0)
+	{
+		vec3 v1 = normalize(a + b);
+		vec3 v2 = normalize(a + c);
+		vec3 v3 = normalize(b + c);
+
+		dividTriangle(a, v1, v2, itertions - 1);
+		dividTriangle(v1, b, v3, itertions - 1);
+		dividTriangle(v1, v3, v2, itertions - 1);
+		dividTriangle(v2, v3, c, itertions - 1);
+	}
+	else
+	{
+		Triangle(a, b, c);
+	}
+}
+void CreateSphere(int iterations)
+{
+	vec3 Sphere_Core_vertices[4] = {
+		vec3(0.0, 0.0, 1.0),
+		vec3(0.0, 0.942809, -0.333333),
+		vec3(-0.816497, -0.471405, -0.333333),
+		vec3(0.816497, -0.471405, -0.333333)
+	};
+
+	sphere_vertices.clear();
+	dividTriangle(Sphere_Core_vertices[0], Sphere_Core_vertices[1], Sphere_Core_vertices[2], iterations);
+	dividTriangle(Sphere_Core_vertices[0], Sphere_Core_vertices[3], Sphere_Core_vertices[1], iterations);
+	dividTriangle(Sphere_Core_vertices[0], Sphere_Core_vertices[2], Sphere_Core_vertices[3], iterations);
+	dividTriangle(Sphere_Core_vertices[3], Sphere_Core_vertices[2], Sphere_Core_vertices[1], iterations);
+
+
+	glGenBuffers(1, &VBO_Ball);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Ball);
+	glBufferData(GL_ARRAY_BUFFER, sphere_vertices.size() * sizeof(vertex), sphere_vertices.data(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
+	glEnableVertexAttribArray(1);
+}
+void BindSphere()
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Ball);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
+	glEnableVertexAttribArray(1);
+}
+#pragma endregion 
 void CompileShader(const char* vertex_shader_file_name, const char* fragment_shader_file_namering, GLuint& programId)
 {
 	programId = InitShader(vertex_shader_file_name, fragment_shader_file_namering);
-	glUseProgram(programId);
+}
+
+void UseShader(GLuint InProgramID)
+{
+	glUseProgram(InProgramID);
+	modelMatLoc = glGetUniformLocation(InProgramID, "modelMat");
+	viewMatLoc = glGetUniformLocation(InProgramID, "viewMat");
+	projMatLoc = glGetUniformLocation(InProgramID, "projMat");
+
+	glm::mat4 viewMat = glm::lookAt(glm::vec3(0, 2, 5), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+	glUniformMatrix4fv(viewMatLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
+
+	glm::mat4 projMat = glm::perspectiveFov(60.0f, (float)WIDTH, (float)HEIGHT, 0.1f, 100.0f);
+	glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat));
 }
 
 int Init()
@@ -171,18 +246,12 @@ int Init()
 	cout << "\tGLSL:" << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 
 	CompileShader("VS.glsl", "FS.glsl", BasiceprogramId);
-	
-	modelMatLoc = glGetUniformLocation(BasiceprogramId, "modelMat");
-	viewMatLoc = glGetUniformLocation(BasiceprogramId, "viewMat");
-	projMatLoc = glGetUniformLocation(BasiceprogramId, "projMat");
-
-	glm::mat4 viewMat = glm::lookAt(glm::vec3(0, 2, 5), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
-	glUniformMatrix4fv(viewMatLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
-
-	glm::mat4 projMat = glm::perspectiveFov(60.0f, (float)WIDTH, (float)HEIGHT, 0.1f, 100.0f);
-	glUniformMatrix4fv(projMatLoc, 1, GL_FALSE, glm::value_ptr(projMat));
+	CompileShader("VSPhong.glsl", "FSPhong.glsl", phongProgramId);
+	CompileShader("VSSmooth.glsl", "FSSmooth.glsl", smoothProgramId);
 
 	CreatePaddle(0);
+	CreateSphere(4);
+
 	glClearColor(0, 0.5, 0.5, 1);
 	glEnable(GL_DEPTH_TEST);
 
@@ -199,16 +268,29 @@ void Update()
 void Render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	BindPaddle();
+	UseShader(BasiceprogramId);
 	// draw cube
-	mat4 ModelMat = glm::translate(glm::vec3(mousposX, 0, 0)) *
+	mat4 ModelMat = glm::translate(glm::vec3(mousposX, -1, 0)) *
 		glm::rotate(0.0f, glm::vec3(1, 0, 0)) *
 		glm::scale(glm::vec3(1, 1, 1));
 	glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
+	UseShader(smoothProgramId);
+	BindSphere();
+	// draw Ball
+	if (firstStart)
+	{
+		ModelMat = glm::translate(glm::vec3(mousposX, -0.8, 0)) *
+			glm::rotate(theta * 180 / 3.14f, glm::vec3(1, 1, 1)) *
+			glm::scale(glm::vec3(0.1, 0.1, 0.1));
+	}
+	glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
+
+	glDrawArrays(GL_TRIANGLES, 0, sphere_vertices.size());
 
 }
 

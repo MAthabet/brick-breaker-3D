@@ -137,8 +137,12 @@
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\OpenGL_Day4\OpenGL_Day2\FSSmooth.glsl" />
+    <None Include="..\..\..\OpenGL_Day4\OpenGL_Day2\VSSmooth.glsl" />
     <None Include="FS.glsl" />
+    <None Include="FSPhong.glsl" />
     <None Include="VS.glsl" />
+    <None Include="VSPhong.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
