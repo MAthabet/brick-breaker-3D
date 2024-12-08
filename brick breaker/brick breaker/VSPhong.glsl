@@ -14,7 +14,7 @@ out vec3 l;
 out vec3 h;
 
 vec3 camera_position = vec3(0,2,5);
-vec3 light_direction = vec3(1,1,1);
+vec3 light_direction = vec3(0,0,0);
 
 void main()
 {

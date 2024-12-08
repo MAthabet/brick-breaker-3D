@@ -41,5 +41,11 @@
     <None Include="..\..\..\OpenGL_Day4\OpenGL_Day2\VSSmooth.glsl">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="VSBox.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="FSBox.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -25,12 +25,19 @@ struct vertex
 GLuint InitShader(const char* vertex_shader_file_name, const char* fragment_shader_file_name);
 
 const GLint WIDTH = 600, HEIGHT = 600;
-GLuint VBO_Ball, VBO_Paddle, VBO_Wall, IBO;
-GLuint BasiceprogramId, phongProgramId, smoothProgramId;
+GLuint VBO_Ball, VBO_Paddle, VBO_Wall, VBO_Box, IBO;
+GLuint BasiceprogramId, phongProgramId, smoothProgramId, boxProgramId;
 float mousposX;
 // transformation
 GLuint modelMatLoc, viewMatLoc, projMatLoc;
-
+float c[6][6] = {
+	{1,1,1,1,1,1},
+	{2,2,2,2,2,2},
+	{0,3,3,3,3,0},
+	{0,4,4,4,4,0},
+	{0,5,1,5,5,0},
+	{0,6,2,6,3,0}
+};
 bool firstStart = true;
 
 int vertices_Indeces[] = {
@@ -211,7 +218,6 @@ void BindSphere()
 
 #pragma region Wall
 
-
 vertex wallVertices[];
 
 void CreateWall()
@@ -269,7 +275,62 @@ void BindWall()
 	glEnableVertexAttribArray(2);
 }
 
-#pragma endregion 
+#pragma endregion
+
+//#pragma region Blocks
+//
+//
+//vertex blockVertices[];
+//
+//void CreateBox()
+//{
+//	const float paddleW = 0.2, paddleH = 0.2, paddleD = 0.2;
+//
+//	vec3 center(0, 0, 0);
+//	vec3 blockVertices[] =
+//	{
+//		vec3(center.x - paddleW / 2, center.y + paddleH / 2, center.z + paddleD / 2),
+//		vec3(center.x - paddleW / 2, center.y - paddleH / 2, center.z + paddleD / 2),
+//		vec3(center.x + paddleW / 2, center.y - paddleH / 2, center.z + paddleD / 2),
+//		vec3(center.x + paddleW / 2, center.y + paddleH / 2, center.z + paddleD / 2),
+//		vec3(center.x + paddleW / 2, center.y + paddleH / 2, center.z - paddleD / 2),
+//		vec3(center.x + paddleW / 2, center.y - paddleH / 2, center.z - paddleD / 2),
+//		vec3(center.x - paddleW / 2, center.y - paddleH / 2, center.z - paddleD / 2),
+//		vec3(center.x - paddleW / 2, center.y + paddleH / 2, center.z - paddleD / 2)
+//	};
+//	// create VBO
+//	glGenBuffers(1, &VBO_Box);
+//
+//	glBindBuffer(GL_ARRAY_BUFFER, VBO_Paddle);
+//	glBufferData(GL_ARRAY_BUFFER, sizeof(blockVertices), blockVertices, GL_DYNAMIC_DRAW);
+//
+//	// Index Buffer
+//	glGenBuffers(1, &IBO);
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+//	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices_Indeces), vertices_Indeces, GL_DYNAMIC_DRAW);
+//
+//	// shader
+//	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vec3), 0);
+//	glEnableVertexAttribArray(0);
+//
+//	glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(vec3), (char*)(2 * sizeof(vec3)));
+//	glEnableVertexAttribArray(2);
+//
+//}
+//
+//void BindBox()
+//{
+//	glBindBuffer(GL_ARRAY_BUFFER, VBO_Box);
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+//
+//	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
+//	glEnableVertexAttribArray(0);
+//
+//	glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(vertex), (char*)(2 * sizeof(vec3)));
+//	glEnableVertexAttribArray(2);
+//}
+//
+//#pragma endregion 
 void CompileShader(const char* vertex_shader_file_name, const char* fragment_shader_file_namering, GLuint& programId)
 {
 	programId = InitShader(vertex_shader_file_name, fragment_shader_file_namering);
@@ -312,10 +373,12 @@ int Init()
 	CompileShader("VS.glsl", "FS.glsl", BasiceprogramId);
 	CompileShader("VSPhong.glsl", "FSPhong.glsl", phongProgramId);
 	CompileShader("VSSmooth.glsl", "FSSmooth.glsl", smoothProgramId);
+	CompileShader("VSBox.glsl", "FSBox.glsl", boxProgramId);
 
 	CreateWall();
 	CreatePaddle(0);
 	CreateSphere(4);
+	//CreateBox();
 
 	glClearColor(0, 0.7, 0.7, 1);
 	glEnable(GL_DEPTH_TEST);
@@ -343,7 +406,7 @@ void Render()
 		glm::scale(glm::vec3(1, 1, 1));
 	glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
+	glDrawElements(GL_LINES, 36, GL_UNSIGNED_INT, NULL);
 
 	BindPaddle();
 	// draw Paddle
@@ -353,6 +416,21 @@ void Render()
 	glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
+	//draw blocks
+	UseShader(boxProgramId);
+	for (int i = 0; i < 6; i++)
+	{
+		for (int j = 0; j < 6; j++)
+		{
+			ModelMat = glm::translate(glm::vec3(-1.7+ j *0.7, 3.5 - i*0.5, 0)) *
+				glm::rotate(0.0f, glm::vec3(1, 0, 0)) *
+				glm::scale(glm::vec3(0.4, 1, 1));
+			glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
+			GLuint C_Location = glGetUniformLocation(boxProgramId, "c");
+			glUniform1f(C_Location, c[i][j]);
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
+		}
+	}
 
 	UseShader(smoothProgramId);
 	BindSphere();
@@ -406,6 +484,7 @@ int main()
 			}
 		}
 		mousposX = 2 * float(sf::Mouse::getPosition(window).x) / WIDTH - 1;
+		printf("%f\n", 2 * float(sf::Mouse::getPosition(window).y) / HEIGHT + 1);
 		Update();
 		Render();
 
