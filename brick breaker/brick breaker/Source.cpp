@@ -27,8 +27,8 @@ GLuint InitShader(const char* vertex_shader_file_name, const char* fragment_shad
 const GLint WIDTH = 600, HEIGHT = 600;
 GLuint VBO_Ball, VBO_Paddle, VBO_Wall, VBO_Box, IBO;
 GLuint BasiceprogramId, phongProgramId, smoothProgramId, boxProgramId;
-float mousposX;
 // transformation
+float mousposX;
 GLuint modelMatLoc, viewMatLoc, projMatLoc;
 float c[6][6] = {
 	{1,1,1,1,1,1},
@@ -38,7 +38,6 @@ float c[6][6] = {
 	{0,5,1,5,5,0},
 	{0,6,2,6,3,0}
 };
-bool firstStart = true;
 
 int vertices_Indeces[] = {
 	//front
@@ -154,6 +153,13 @@ void BindPaddle()
 
 #pragma region Ball
 vector<vertex> sphere_vertices;
+vec2 ballVel(0,2);
+vec2 ballPos(0,-0.8);
+bool firstStart = true;
+void moveBall(float dt)
+{
+	ballPos += ballVel * dt;
+}
 void Triangle(vec3 a, vec3 b, vec3 c)
 {
 	vec3 normal = (a + b + c) / 3.0f;
@@ -387,10 +393,13 @@ int Init()
 }
 
 float theta = 0;
-void Update()
+void Update(float dt)
 {
 	// add all tick code
-	theta += 0.001f;
+	if (firstStart)
+		ballPos.x = mousposX;
+	else 
+		moveBall(dt);
 }
 
 void Render()
@@ -432,21 +441,12 @@ void Render()
 		}
 	}
 
+	// draw Ball
 	UseShader(smoothProgramId);
 	BindSphere();
-	// draw Ball
-	if (firstStart)
-	{
-		ModelMat = glm::translate(glm::vec3(mousposX, -0.8, 0)) *
-			glm::rotate(theta * 180 / 3.14f, glm::vec3(1, 1, 1)) *
-			glm::scale(glm::vec3(0.1, 0.1, 0.1));
-	}
-	else
-	{
-		ModelMat = glm::translate(glm::vec3(0, -0.8, 0)) *
-			glm::rotate(theta * 180 / 3.14f, glm::vec3(1, 1, 1)) *
-			glm::scale(glm::vec3(0.1, 0.1, 0.1));
-	}
+	ModelMat = glm::translate(glm::vec3(ballPos.x, ballPos.y, 0)) *
+	glm::rotate(theta * 180 / 3.14f, glm::vec3(1, 1, 1)) *
+	glm::scale(glm::vec3(0.1, 0.1, 0.1));
 	glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 	glDrawArrays(GL_TRIANGLES, 0, sphere_vertices.size());
 
@@ -457,7 +457,9 @@ int main()
 	sf::ContextSettings context;
 	context.depthBits = 24;
 	sf::Window window(sf::VideoMode(WIDTH, HEIGHT), "SFML works!", sf::Style::Close, context);
-
+	window.setFramerateLimit(60);
+	const GLubyte* version = glGetString(GL_VERSION);
+	std::cout << "OpenGL Version: " << version << std::endl;
 	if (Init()) return 1;
 
 	while (window.isOpen())
@@ -484,8 +486,8 @@ int main()
 			}
 		}
 		mousposX = 2 * float(sf::Mouse::getPosition(window).x) / WIDTH - 1;
-		printf("%f\n", 2 * float(sf::Mouse::getPosition(window).y) / HEIGHT + 1);
-		Update();
+		//printf("%f\n", 2 * float(sf::Mouse::getPosition(window).y) / HEIGHT + 1);
+		Update(1.0f/60);
 		Render();
 
 		window.display();
