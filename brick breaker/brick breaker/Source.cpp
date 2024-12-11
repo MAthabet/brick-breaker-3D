@@ -30,13 +30,13 @@ GLuint BasiceprogramId, phongProgramId, smoothProgramId, boxProgramId;
 // transformation
 float mousposX;
 GLuint modelMatLoc, viewMatLoc, projMatLoc;
-float c[6][6] = {
-	{1,1,1,1,1,1},
-	{2,2,2,2,2,2},
-	{0,3,3,3,3,0},
-	{0,4,4,4,4,0},
-	{0,5,1,5,5,0},
-	{0,6,2,6,3,0}
+float c[7][7] = {
+	{1,1,1,1,1,1,1},
+	{2,2,2,2,2,2,2},
+	{0,3,3,3,3,0,3},
+	{0,4,4,4,4,0,5},
+	{0,5,1,5,5,0,7},
+	{0,6,2,6,3,0,9}
 };
 
 int vertices_Indeces[] = {
@@ -153,7 +153,7 @@ void BindPaddle()
 
 #pragma region Ball
 vector<vertex> sphere_vertices;
-vec2 ballVel(0,2);
+vec2 ballVel(1,2);
 vec2 ballPos(0,-0.8);
 bool firstStart = true;
 void moveBall(float dt)
@@ -220,6 +220,21 @@ void BindSphere()
 	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
 	glEnableVertexAttribArray(1);
 }
+void handleCollision()
+{
+	if (ballPos.y > 4.3|| ballPos.y < -1)
+		ballVel.y = -ballVel.y;
+	if (ballPos.x > 2.4)
+	{
+		ballPos.x = 2.4;
+		ballVel.x = -ballVel.x;
+	}
+	else if (ballPos.x < -2.4)
+	{
+		ballPos.x = -2.4;
+		ballVel.x = -ballVel.x;
+	}
+}
 #pragma endregion 
 
 #pragma region Wall
@@ -228,19 +243,46 @@ vertex wallVertices[];
 
 void CreateWall()
 {
-	const float WallW = 6, WallH = 6.5, WallD = 0.2;
-	vec3 center(0, 0, 0);
-	vec3 color(0, 0.5, 0.5);
+	const float WallW = 6, WallH = 6.5, WallD = 1;
+	vec3 center(0, 1.5, 0);
 	vertex wallVertices[] =
 	{
-		{vec3(center.x - WallW / 2, center.y + WallH / 2, center.z + WallD / 2),color},
-		{vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),color},
-		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),color},
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),color},
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),color},
-		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),color},
-		{vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),color},
-		{vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),color}
+		//right wall
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,0,0)},//1
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0)},//2
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,0,0)},
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//4
+		//Left wall
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) },//5
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0) },//6
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,1,0) },//7
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) },
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,1,0) },
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(0,1,0) },//8
+		//down
+		{ vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0) },//2
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0) },//6
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0) },//6
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,1,0) },//7
+		//up
+		{ vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,0,0) },
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) },
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) },
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(0,1,0) },
+		//floor
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,1,0) },
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0)},
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0) },
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z  - WallD / 2),vec3(0,1,0) },
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0) },
+		{vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) }
+
 	};
 
 	// create VBO
@@ -249,11 +291,6 @@ void CreateWall()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO_Wall);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(wallVertices), wallVertices, GL_DYNAMIC_DRAW);
 
-	// Index Buffer
-	glGenBuffers(1, &IBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices_Indeces), vertices_Indeces, GL_DYNAMIC_DRAW);
-
 	// shader
 	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
 	glEnableVertexAttribArray(0);
@@ -261,24 +298,17 @@ void CreateWall()
 	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
 	glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(vertex), (char*)(2 * sizeof(vec3)));
-	glEnableVertexAttribArray(2);
-
 }
 
 void BindWall()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO_Wall);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
 	glEnableVertexAttribArray(0);
 
 	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
 	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(vertex), (char*)(2 * sizeof(vec3)));
-	glEnableVertexAttribArray(2);
 }
 
 #pragma endregion
@@ -342,6 +372,7 @@ void CompileShader(const char* vertex_shader_file_name, const char* fragment_sha
 	programId = InitShader(vertex_shader_file_name, fragment_shader_file_namering);
 }
 
+float theta = 0;
 void UseShader(GLuint InProgramID)
 {
 	glUseProgram(InProgramID);
@@ -349,7 +380,7 @@ void UseShader(GLuint InProgramID)
 	viewMatLoc = glGetUniformLocation(InProgramID, "viewMat");
 	projMatLoc = glGetUniformLocation(InProgramID, "projMat");
 
-	glm::mat4 viewMat = glm::lookAt(glm::vec3(0, 0, 5), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+	glm::mat4 viewMat = glm::lookAt(glm::vec3(0, -2, 6), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 	glUniformMatrix4fv(viewMatLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
 
 	glm::mat4 projMat = glm::perspectiveFov(60.0f, (float)WIDTH, (float)HEIGHT, 0.1f, 100.0f);
@@ -392,14 +423,16 @@ int Init()
 	return 0;
 }
 
-float theta = 0;
 void Update(float dt)
 {
 	// add all tick code
 	if (firstStart)
-		ballPos.x = mousposX;
-	else 
+		ballPos = vec2(mousposX,-0.8);
+	else
+	{
+		handleCollision();
 		moveBall(dt);
+	}
 }
 
 void Render()
@@ -410,12 +443,10 @@ void Render()
 	UseShader(BasiceprogramId);
 	BindWall();
 	// draw Wall
-	mat4 ModelMat = glm::translate(glm::vec3(0, 1.5, -1)) *
-		glm::rotate(0.0f, glm::vec3(1, 0, 0)) *
-		glm::scale(glm::vec3(1, 1, 1));
+	mat4 ModelMat = glm::translate(glm::vec3(0, 0, 0));
 	glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 
-	glDrawElements(GL_LINES, 36, GL_UNSIGNED_INT, NULL);
+	glDrawArrays(GL_TRIANGLES, 0, 30);
 
 	BindPaddle();
 	// draw Paddle
@@ -427,11 +458,11 @@ void Render()
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
 	//draw blocks
 	UseShader(boxProgramId);
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < 7; i++)
 	{
-		for (int j = 0; j < 6; j++)
+		for (int j = 0; j < 7; j++)
 		{
-			ModelMat = glm::translate(glm::vec3(-1.7+ j *0.7, 3.5 - i*0.5, 0)) *
+			ModelMat = glm::translate(glm::vec3(-1.7+ j *0.6, 3.5 - i*0.5, 0)) *
 				glm::rotate(0.0f, glm::vec3(1, 0, 0)) *
 				glm::scale(glm::vec3(0.4, 1, 1));
 			glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
@@ -486,8 +517,8 @@ int main()
 			}
 		}
 		mousposX = 2 * float(sf::Mouse::getPosition(window).x) / WIDTH - 1;
-		//printf("%f\n", 2 * float(sf::Mouse::getPosition(window).y) / HEIGHT + 1);
 		Update(1.0f/60);
+		printf("%f\n", ballPos.y);
 		Render();
 
 		window.display();
