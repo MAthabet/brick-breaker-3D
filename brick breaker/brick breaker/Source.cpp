@@ -30,13 +30,16 @@ GLuint BasiceprogramId, smoothProgramId, boxProgramId;
 // transformation
 float mousposX;
 GLuint modelMatLoc, viewMatLoc, projMatLoc;
-float c[7][7] = {
-	{1,1,1,1,1,1,1},
-	{2,2,2,2,2,2,2},
-	{0,3,3,3,3,0,3},
-	{0,4,4,4,4,0,5},
-	{0,5,1,5,5,0,7},
-	{0,6,2,6,3,0,9}
+// just too lazy to make it as enum
+// 0 is void 1->5 is how many hit to break else is solid 
+int c[7][7] = {
+	{2,2,-1,1,1,1,1},
+	{-1,0,1,1,5,5,5},
+	{1,2,3,4,5,3,2},
+	{-1,3,3,3,3,-1,3},
+	{2,2,0,0,2,2,2},
+	{1,2,0,0,2,2,1},
+	{1,1,1,1,1,1,1}
 };
 
 int vertices_Indeces[] = {
@@ -338,6 +341,25 @@ void BindSphere()
 	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
 	glEnableVertexAttribArray(1);
 }
+void handleCollisionWithBox()
+{
+	for (int i = 0; i < 7; i++)
+	{
+		for (int j = 0; j < 7; j++)
+		{
+			if (c[i][j] == 0) continue;
+			if (ballPos.x + ballR >= -WallW / 2 + boxW + j * 0.8 - boxW / 2 &&
+				ballPos.x - ballR <= -WallW / 2 + boxW + j * 0.8 + boxW / 2 &&
+				ballPos.y + ballR >= WallH / 2 - boxH - margin - i * 0.6 - boxH / 2 &&
+				ballPos.y - ballR <= WallH / 2 - boxH - margin - i * 0.6 + boxH / 2)
+			{
+				c[i][j]--;
+				ballVel = -ballVel;
+			}
+
+		}
+	}
+}
 void handleCollisionWithWall()
 {
 	if (ballPos.y > WallH / 2 - ballR)
@@ -467,10 +489,11 @@ void Render()
 	{
 		for (int j = 0; j < 7; j++)
 		{
-			ModelMat = glm::translate(glm::vec3(WallW/2 - boxW - margin - j * 0.8, WallH/2 - boxH - margin -  i * 0.6, 0));
+			if (c[i][j] == 0) continue;
+			ModelMat = glm::translate(glm::vec3( -WallW/2 + boxW + j * 0.8, (WallH/2 - boxH - margin -  i * 0.6), 0 ));
 			glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 			GLuint C_Location = glGetUniformLocation(boxProgramId, "c");
-			glUniform1f(C_Location, c[i][j]);
+			glUniform1i(C_Location, c[i][j]);
 			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
 		}
 	}
