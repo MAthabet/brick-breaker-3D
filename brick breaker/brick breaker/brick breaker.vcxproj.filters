@@ -29,22 +29,16 @@
     <None Include="FS.glsl">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="FSPhong.glsl">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="VSPhong.glsl">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\..\..\OpenGL_Day4\OpenGL_Day2\FSSmooth.glsl">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\..\..\OpenGL_Day4\OpenGL_Day2\VSSmooth.glsl">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="VSBox.glsl">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="FSBox.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="FSSmooth.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="VSSmooth.glsl">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

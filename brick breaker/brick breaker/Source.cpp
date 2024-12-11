@@ -26,7 +26,7 @@ GLuint InitShader(const char* vertex_shader_file_name, const char* fragment_shad
 
 const GLint WIDTH = 600, HEIGHT = 600;
 GLuint VBO_Ball, VBO_Paddle, VBO_Wall, VBO_Box, IBO;
-GLuint BasiceprogramId, phongProgramId, smoothProgramId, boxProgramId;
+GLuint BasiceprogramId, smoothProgramId, boxProgramId;
 // transformation
 float mousposX;
 GLuint modelMatLoc, viewMatLoc, projMatLoc;
@@ -90,16 +90,90 @@ int vertices_Indeces[] = {
 	5
 };
 
+#pragma region Wall
+const float margin = 0.1;
+const float WallW = 6, WallH = 6.5, WallD = 1;
+vec3 wallCenter(0, 0, 0);
+
+void CreateWall()
+{
+	vec3 center = wallCenter;
+	vertex wallVertices[] =
+	{
+		//right wall
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(.5,0,0)},//1
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0.5,0,0)},//2
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0.5,0,0)},
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//4
+		//Left wall
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,0.5,0) },//5
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,0.5,0) },//6
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,0.5,0) },//7
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,0.5,0) },
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,0.5,0) },
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(0,0.5,0) },//8
+		//up
+		{ vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0.5,0,0) },//2
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0.5,0,0) },//6
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0.5,0,0) },//6
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
+		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0) },//7
+		//down
+		{ vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0) },
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0) },
+		{ vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0) },
+		{ vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,1,0) },
+		//floor
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,1,0) },
+		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,1,0)},
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0.5,0.5,0) },
+		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z  - WallD / 2),vec3(1,1,0) },
+		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0.5,0.5,0) },
+		{vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,1,0) }
+
+	};
+
+	// create VBO
+	glGenBuffers(1, &VBO_Wall);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Wall);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(wallVertices), wallVertices, GL_DYNAMIC_DRAW);
+
+	// shader
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
+	glEnableVertexAttribArray(1);
+
+}
+
+void BindWall()
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Wall);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
+	glEnableVertexAttribArray(1);
+}
+
+#pragma endregion
+
 #pragma region Paddle
 
+const float paddleW = 1, paddleH = 0.2, paddleD = 0.2;
+vec3 paddleCenter(wallCenter.x, wallCenter .y + -WallH/2 + paddleH/2 + margin, 0);
 
-vertex paddleVertices[];
-
-void CreatePaddle(float posX)
+void CreatePaddle()
 {
-	const float paddleW = 1, paddleH = 0.2, paddleD = 0.2;
-
-	vec3 center(posX,0,0);
+	vec3 center = paddleCenter;
 	vertex paddleVertices[] = 
 	{
 		{vec3(center.x - paddleW / 2, center.y + paddleH / 2, center.z + paddleD / 2),vec3(1,0,0)},
@@ -129,9 +203,6 @@ void CreatePaddle(float posX)
 	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
 	glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(vertex), (char*)(2 * sizeof(vec3)));
-	glEnableVertexAttribArray(2);
-
 }
 
 void BindPaddle()
@@ -145,17 +216,64 @@ void BindPaddle()
 	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
 	glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(vertex), (char*)(2 * sizeof(vec3)));
-	glEnableVertexAttribArray(2);
+}
+
+#pragma endregion 
+
+#pragma region Box
+
+const float boxW = 0.6, boxH = 0.3, boxD = 0.3;
+vec3 boxCenter(0, 0 , boxD/2);
+
+void CreateBox()
+{
+	vec3 center = boxCenter;
+	vec3 boxVertices[] =
+	{
+		vec3(center.x - boxW / 2, center.y + boxH / 2, center.z + boxD / 2),
+		vec3(center.x - boxW / 2, center.y - boxH / 2, center.z + boxD / 2),
+		vec3(center.x + boxW / 2, center.y - boxH / 2, center.z + boxD / 2),
+		vec3(center.x + boxW / 2, center.y + boxH / 2, center.z + boxD / 2),
+		vec3(center.x + boxW / 2, center.y + boxH / 2, center.z - boxD / 2),
+		vec3(center.x + boxW / 2, center.y - boxH / 2, center.z - boxD / 2),
+		vec3(center.x - boxW / 2, center.y - boxH / 2, center.z - boxD / 2),
+		vec3(center.x - boxW / 2, center.y + boxH / 2, center.z - boxD / 2)
+	};
+	// create VBO
+	glGenBuffers(1, &VBO_Box);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Box);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(boxVertices), boxVertices, GL_DYNAMIC_DRAW);
+
+	// Index Buffer
+	glGenBuffers(1, &IBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices_Indeces), vertices_Indeces, GL_DYNAMIC_DRAW);
+
+	// shader
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vec3), 0);
+	glEnableVertexAttribArray(0);
+
+}
+
+void BindBox()
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_Box);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vec3), 0);
+	glEnableVertexAttribArray(0);
 }
 
 #pragma endregion 
 
 #pragma region Ball
 vector<vertex> sphere_vertices;
-vec2 ballVel(1,2);
-vec2 ballPos(0,-0.8);
+vec3 ballVel(2, 4, 0);
+vec3 ballPos;
+float ballR = 0.15;
 bool firstStart = true;
+
 void moveBall(float dt)
 {
 	ballPos += ballVel * dt;
@@ -220,159 +338,45 @@ void BindSphere()
 	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
 	glEnableVertexAttribArray(1);
 }
+void handleCollisionWithWall()
+{
+	if (ballPos.y > WallH / 2 - ballR)
+		ballVel.y = -ballVel.y;
+	else if (ballPos.y < -WallH / 2 + ballR)
+	{
+		ballVel.x = 2;
+		ballVel.y = 4;
+		firstStart = true;
+	}
+	if (ballPos.x > WallW / 2 - ballR)
+	{
+		ballVel.x = -ballVel.x;
+	}
+	else if (ballPos.x < -WallW / 2 + ballR)
+	{
+		ballVel.x = -ballVel.x;
+	}
+}
+bool collideWithPaddle()
+{
+	return ballPos.x + ballR >= paddleCenter.x - paddleW / 2 &&
+		ballPos.x - ballR <= paddleCenter.x + paddleW / 2 &&
+		ballPos.y + ballR >= paddleCenter.y - paddleH / 2 &&
+		ballPos.y - ballR <= paddleCenter.y + paddleH / 2;
+}
 void handleCollision()
 {
-	if (ballPos.y > 4.3|| ballPos.y < -1)
+	handleCollisionWithWall();
+	if (collideWithPaddle())
 		ballVel.y = -ballVel.y;
-	if (ballPos.x > 2.4)
-	{
-		ballPos.x = 2.4;
-		ballVel.x = -ballVel.x;
-	}
-	else if (ballPos.x < -2.4)
-	{
-		ballPos.x = -2.4;
-		ballVel.x = -ballVel.x;
-	}
 }
 #pragma endregion 
 
-#pragma region Wall
 
-vertex wallVertices[];
-
-void CreateWall()
-{
-	const float WallW = 6, WallH = 6.5, WallD = 1;
-	vec3 center(0, 1.5, 0);
-	vertex wallVertices[] =
-	{
-		//right wall
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,0,0)},//1
-		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0)},//2
-		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,0,0)},
-		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//4
-		//Left wall
-		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) },//5
-		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0) },//6
-		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,1,0) },//7
-		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) },
-		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,1,0) },
-		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(0,1,0) },//8
-		//down
-		{ vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0) },//2
-		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0) },//6
-		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
-		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0) },//6
-		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(1,0,0)},//3
-		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z + WallD / 2),vec3(0,1,0) },//7
-		//up
-		{ vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,0,0) },
-		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) },
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
-		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) },
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(1,0,0)},
-		{ vec3(center.x - WallW / 2, center.y + WallH / 2, center.z + WallD / 2),vec3(0,1,0) },
-		//floor
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(1,1,0) },
-		{vec3(center.x + WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(0,1,0)},
-		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0) },
-		{vec3(center.x + WallW / 2, center.y + WallH / 2, center.z  - WallD / 2),vec3(0,1,0) },
-		{ vec3(center.x - WallW / 2, center.y - WallH / 2, center.z - WallD / 2),vec3(1,0,0) },
-		{vec3(center.x - WallW / 2, center.y + WallH / 2, center.z - WallD / 2),vec3(0,1,0) }
-
-	};
-
-	// create VBO
-	glGenBuffers(1, &VBO_Wall);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Wall);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(wallVertices), wallVertices, GL_DYNAMIC_DRAW);
-
-	// shader
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
-	glEnableVertexAttribArray(1);
-
-}
-
-void BindWall()
-{
-	glBindBuffer(GL_ARRAY_BUFFER, VBO_Wall);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(vertex), (char*)(sizeof(vec3)));
-	glEnableVertexAttribArray(1);
-}
-
-#pragma endregion
-
-//#pragma region Blocks
-//
-//
-//vertex blockVertices[];
-//
-//void CreateBox()
-//{
-//	const float paddleW = 0.2, paddleH = 0.2, paddleD = 0.2;
-//
-//	vec3 center(0, 0, 0);
-//	vec3 blockVertices[] =
-//	{
-//		vec3(center.x - paddleW / 2, center.y + paddleH / 2, center.z + paddleD / 2),
-//		vec3(center.x - paddleW / 2, center.y - paddleH / 2, center.z + paddleD / 2),
-//		vec3(center.x + paddleW / 2, center.y - paddleH / 2, center.z + paddleD / 2),
-//		vec3(center.x + paddleW / 2, center.y + paddleH / 2, center.z + paddleD / 2),
-//		vec3(center.x + paddleW / 2, center.y + paddleH / 2, center.z - paddleD / 2),
-//		vec3(center.x + paddleW / 2, center.y - paddleH / 2, center.z - paddleD / 2),
-//		vec3(center.x - paddleW / 2, center.y - paddleH / 2, center.z - paddleD / 2),
-//		vec3(center.x - paddleW / 2, center.y + paddleH / 2, center.z - paddleD / 2)
-//	};
-//	// create VBO
-//	glGenBuffers(1, &VBO_Box);
-//
-//	glBindBuffer(GL_ARRAY_BUFFER, VBO_Paddle);
-//	glBufferData(GL_ARRAY_BUFFER, sizeof(blockVertices), blockVertices, GL_DYNAMIC_DRAW);
-//
-//	// Index Buffer
-//	glGenBuffers(1, &IBO);
-//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-//	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices_Indeces), vertices_Indeces, GL_DYNAMIC_DRAW);
-//
-//	// shader
-//	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vec3), 0);
-//	glEnableVertexAttribArray(0);
-//
-//	glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(vec3), (char*)(2 * sizeof(vec3)));
-//	glEnableVertexAttribArray(2);
-//
-//}
-//
-//void BindBox()
-//{
-//	glBindBuffer(GL_ARRAY_BUFFER, VBO_Box);
-//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-//
-//	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(vertex), 0);
-//	glEnableVertexAttribArray(0);
-//
-//	glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(vertex), (char*)(2 * sizeof(vec3)));
-//	glEnableVertexAttribArray(2);
-//}
-//
-//#pragma endregion 
 void CompileShader(const char* vertex_shader_file_name, const char* fragment_shader_file_namering, GLuint& programId)
 {
 	programId = InitShader(vertex_shader_file_name, fragment_shader_file_namering);
 }
-
-float theta = 0;
 void UseShader(GLuint InProgramID)
 {
 	glUseProgram(InProgramID);
@@ -380,7 +384,7 @@ void UseShader(GLuint InProgramID)
 	viewMatLoc = glGetUniformLocation(InProgramID, "viewMat");
 	projMatLoc = glGetUniformLocation(InProgramID, "projMat");
 
-	glm::mat4 viewMat = glm::lookAt(glm::vec3(0, -2, 6), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+	glm::mat4 viewMat = glm::lookAt(glm::vec3(0, -3, 6), glm::vec3(0, 0, -0), glm::vec3(0, 1, 0));
 	glUniformMatrix4fv(viewMatLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
 
 	glm::mat4 projMat = glm::perspectiveFov(60.0f, (float)WIDTH, (float)HEIGHT, 0.1f, 100.0f);
@@ -408,16 +412,16 @@ int Init()
 	cout << "\tGLSL:" << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 
 	CompileShader("VS.glsl", "FS.glsl", BasiceprogramId);
-	CompileShader("VSPhong.glsl", "FSPhong.glsl", phongProgramId);
 	CompileShader("VSSmooth.glsl", "FSSmooth.glsl", smoothProgramId);
 	CompileShader("VSBox.glsl", "FSBox.glsl", boxProgramId);
 
 	CreateWall();
-	CreatePaddle(0);
+	CreatePaddle();
+	CreateBox();
 	CreateSphere(4);
 	//CreateBox();
 
-	glClearColor(0, 0.7, 0.7, 1);
+	glClearColor(135 / 255.0f, 206 / 255.0f, 235/255.0f, 1);
 	glEnable(GL_DEPTH_TEST);
 
 	return 0;
@@ -426,17 +430,19 @@ int Init()
 void Update(float dt)
 {
 	// add all tick code
+	paddleCenter.x = mousposX;
 	if (firstStart)
-		ballPos = vec2(mousposX,-0.8);
+		ballPos = vec3(paddleCenter.x, paddleCenter.y + paddleH/2 +  ballR, 0);
 	else
 	{
-		handleCollision();
 		moveBall(dt);
+		handleCollision();
 	}
 }
-
+float theta = 0;
 void Render()
 {
+	theta+=0.1;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -450,21 +456,18 @@ void Render()
 
 	BindPaddle();
 	// draw Paddle
-	ModelMat = glm::translate(glm::vec3(mousposX, -1, 0)) *
-		glm::rotate(0.0f, glm::vec3(1, 0, 0)) *
-		glm::scale(glm::vec3(1, 1, 1));
+	ModelMat = glm::translate(glm::vec3(paddleCenter.x, 0, 0));
 	glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
 	//draw blocks
 	UseShader(boxProgramId);
+	BindBox();
 	for (int i = 0; i < 7; i++)
 	{
 		for (int j = 0; j < 7; j++)
 		{
-			ModelMat = glm::translate(glm::vec3(-1.7+ j *0.6, 3.5 - i*0.5, 0)) *
-				glm::rotate(0.0f, glm::vec3(1, 0, 0)) *
-				glm::scale(glm::vec3(0.4, 1, 1));
+			ModelMat = glm::translate(glm::vec3(WallW/2 - boxW - margin - j * 0.8, WallH/2 - boxH - margin -  i * 0.6, 0));
 			glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 			GLuint C_Location = glGetUniformLocation(boxProgramId, "c");
 			glUniform1f(C_Location, c[i][j]);
@@ -476,11 +479,10 @@ void Render()
 	UseShader(smoothProgramId);
 	BindSphere();
 	ModelMat = glm::translate(glm::vec3(ballPos.x, ballPos.y, 0)) *
-	glm::rotate(theta * 180 / 3.14f, glm::vec3(1, 1, 1)) *
-	glm::scale(glm::vec3(0.1, 0.1, 0.1));
+	glm::rotate(theta * 180.0f / 22.0f * 7.0f, glm::vec3(1, 1, 1)) *
+	glm::scale(glm::vec3(ballR, ballR, ballR));
 	glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 	glDrawArrays(GL_TRIANGLES, 0, sphere_vertices.size());
-
 }
 
 int main()
@@ -510,7 +512,6 @@ int main()
 				if (event.key.code == sf::Mouse::Left)
 				{
 					firstStart = false;
-					printf("ball shoot");
 				}
 				break;
 			}
@@ -518,7 +519,6 @@ int main()
 		}
 		mousposX = 2 * float(sf::Mouse::getPosition(window).x) / WIDTH - 1;
 		Update(1.0f/60);
-		printf("%f\n", ballPos.y);
 		Render();
 
 		window.display();
