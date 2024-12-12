@@ -272,7 +272,7 @@ void BindBox()
 
 #pragma region Ball
 vector<vertex> sphere_vertices;
-vec3 ballVel(2, 4, 0);
+vec3 ballVel(1, 1, 0);
 vec3 ballPos;
 float ballR = 0.15;
 bool firstStart = true;
@@ -348,13 +348,14 @@ void handleCollisionWithBox()
 		for (int j = 0; j < 7; j++)
 		{
 			if (c[i][j] == 0) continue;
-			if (ballPos.x + ballR >= -WallW / 2 + boxW + j * 0.8 - boxW / 2 &&
-				ballPos.x - ballR <= -WallW / 2 + boxW + j * 0.8 + boxW / 2 &&
-				ballPos.y + ballR >= WallH / 2 - boxH - margin - i * 0.6 - boxH / 2 &&
-				ballPos.y - ballR <= WallH / 2 - boxH - margin - i * 0.6 + boxH / 2)
+			vec3 boxCenter(-WallW / 2 + boxW + j * 0.8, WallH / 2 - boxH - margin - i * 0.6, 0);
+			if (ballPos.x + ballR >= boxCenter.x - boxW / 2 &&
+				ballPos.x - ballR <= boxCenter.x + boxW / 2 &&
+				ballPos.y + ballR >= boxCenter.y - boxH / 2 &&
+				ballPos.y - ballR <= boxCenter.y + boxH / 2)
 			{
 				c[i][j]--;
-				ballVel = -ballVel;
+				ballVel.y = -ballVel.y;
 			}
 
 		}
@@ -381,16 +382,17 @@ void handleCollisionWithWall()
 }
 bool collideWithPaddle()
 {
-	return ballPos.x + ballR >= paddleCenter.x - paddleW / 2 &&
-		ballPos.x - ballR <= paddleCenter.x + paddleW / 2 &&
-		ballPos.y + ballR >= paddleCenter.y - paddleH / 2 &&
-		ballPos.y - ballR <= paddleCenter.y + paddleH / 2;
+	return ballPos.x + ballR > paddleCenter.x - paddleW / 2 &&
+		ballPos.x - ballR < paddleCenter.x + paddleW / 2 &&
+		ballPos.y + ballR > paddleCenter.y - paddleH / 2 &&
+		ballPos.y - ballR < paddleCenter.y + paddleH / 2;
 }
 void handleCollision()
 {
 	handleCollisionWithWall();
+	handleCollisionWithBox();
 	if (collideWithPaddle())
-		ballVel.y = -ballVel.y;
+		ballVel.y = abs(ballVel.y);
 }
 #pragma endregion 
 
@@ -490,7 +492,7 @@ void Render()
 		for (int j = 0; j < 7; j++)
 		{
 			if (c[i][j] == 0) continue;
-			ModelMat = glm::translate(glm::vec3( -WallW/2 + boxW + j * 0.8, (WallH/2 - boxH - margin -  i * 0.6), 0 ));
+			ModelMat = glm::translate(glm::vec3( -WallW/2 + boxW + j * 0.8, WallH/2 - boxH - margin -  i * 0.6, 0 ));
 			glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 			GLuint C_Location = glGetUniformLocation(boxProgramId, "c");
 			glUniform1i(C_Location, c[i][j]);
@@ -541,6 +543,11 @@ int main()
 			}
 		}
 		mousposX = 2 * float(sf::Mouse::getPosition(window).x) / WIDTH - 1;
+		mousposX *= WallW / 2;
+		if (mousposX > WallW / 2 - paddleW / 2)
+			mousposX = WallW / 2 - paddleW / 2;
+		else if (mousposX < - WallW / 2 + paddleW / 2)
+			mousposX = - WallW / 2 + paddleW / 2;
 		Update(1.0f/60);
 		Render();
 
