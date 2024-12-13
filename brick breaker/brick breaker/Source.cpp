@@ -94,7 +94,7 @@ int vertices_Indeces[] = {
 };
 
 #pragma region Wall
-const float margin = 0.1;
+const float margin = 0.5;
 const float WallW = 6, WallH = 6.5, WallD = 1;
 vec3 wallCenter(0, 0, 0);
 
@@ -272,7 +272,7 @@ void BindBox()
 
 #pragma region Ball
 vector<vertex> sphere_vertices;
-vec3 ballVel(1, 1, 0);
+vec3 ballVel(2, 4, 0);
 vec3 ballPos;
 float ballR = 0.15;
 bool firstStart = true;
@@ -355,7 +355,15 @@ void handleCollisionWithBox()
 				ballPos.y - ballR <= boxCenter.y + boxH / 2)
 			{
 				c[i][j]--;
-				ballVel.y = -ballVel.y;
+				float xOverlap = std::min(ballPos.x + ballR - (boxCenter.x - boxW / 2),
+					(boxCenter.x + boxW / 2) - (ballPos.x - ballR));
+				float yOverlap = std::min(ballPos.y + ballR - (boxCenter.y - boxH / 2),
+					(boxCenter.y + boxH / 2) - (ballPos.y - ballR));
+
+				if (xOverlap < yOverlap)
+					ballVel.x = -ballVel.x;
+				else
+					ballVel.y = -ballVel.y;
 			}
 
 		}
@@ -392,7 +400,32 @@ void handleCollision()
 	handleCollisionWithWall();
 	handleCollisionWithBox();
 	if (collideWithPaddle())
-		ballVel.y = abs(ballVel.y);
+	{
+		float xOverlap = std::min(ballPos.x + ballR - (paddleCenter.x - paddleW / 2),
+			(paddleCenter.x + paddleW / 2) - (ballPos.x - ballR));
+		float yOverlap = std::min(ballPos.y + ballR - (paddleCenter.y - paddleH / 2),
+			(paddleCenter.y + paddleH / 2) - (ballPos.y - ballR));
+
+		if (xOverlap < yOverlap)
+		{
+			ballVel.x = -ballVel.x;
+
+			if (ballPos.x < paddleCenter.x)
+				ballPos.x -= xOverlap;
+			else
+				ballPos.x += xOverlap;
+		}
+		else
+		{
+			ballVel.y = -ballVel.y;
+
+			if (ballPos.y < paddleCenter.y)
+				ballPos.y -= yOverlap;
+			else
+				ballPos.y += yOverlap;
+		}
+	}
+
 }
 #pragma endregion 
 
@@ -408,7 +441,7 @@ void UseShader(GLuint InProgramID)
 	viewMatLoc = glGetUniformLocation(InProgramID, "viewMat");
 	projMatLoc = glGetUniformLocation(InProgramID, "projMat");
 
-	glm::mat4 viewMat = glm::lookAt(glm::vec3(0, -3, 6), glm::vec3(0, 0, -0), glm::vec3(0, 1, 0));
+	glm::mat4 viewMat = glm::lookAt(glm::vec3(0, -4, 6), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glUniformMatrix4fv(viewMatLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
 
 	glm::mat4 projMat = glm::perspectiveFov(60.0f, (float)WIDTH, (float)HEIGHT, 0.1f, 100.0f);
@@ -550,7 +583,6 @@ int main()
 			mousposX = - WallW / 2 + paddleW / 2;
 		Update(1.0f/60);
 		Render();
-
 		window.display();
 	}
 	return 0;
