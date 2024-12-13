@@ -33,15 +33,24 @@ GLuint modelMatLoc, viewMatLoc, projMatLoc;
 // just too lazy to make it as enum
 // 0 is void 1->5 is how many hit to break else is solid 
 int c[7][7] = {
-	{2,2,-1,1,1,1,1},
-	{-1,0,1,1,5,5,5},
-	{1,2,3,4,5,3,2},
-	{-1,3,3,3,3,-1,3},
-	{2,2,0,0,2,2,2},
-	{1,2,0,0,2,2,1},
-	{1,1,1,1,1,1,1}
+	{-1,0,0,0,0,-1,0},
+	{-1,0,0,0,0,-1,0},
+	{-1,0,0,0,0,-1,0},
+	{-1,0,0,0,0,-1,0},
+	{0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,1},
+	{0,0,0,0,0,0,0}
 };
-
+int a[7][7] = {
+	{2,2,4,1,1,1,1},
+	{1,2,1,1,5,5,5},
+	{1,2,3,4,5,3,2},
+	{4,3,3,3,3,4,3},
+	{2,2,5,5,2,2,2},
+	{1,2,1,1,2,2,1},
+	{-1,-1,-1,3,-1,-1,-1}
+};
+int lvl = 0;
 int vertices_Indeces[] = {
 	//front
 	0,
@@ -94,7 +103,7 @@ int vertices_Indeces[] = {
 };
 
 #pragma region Wall
-const float margin = 0.5;
+const float margin = 0.1;
 const float WallW = 6, WallH = 6.5, WallD = 1;
 vec3 wallCenter(0, 0, 0);
 
@@ -343,29 +352,60 @@ void BindSphere()
 }
 void handleCollisionWithBox()
 {
-	for (int i = 0; i < 7; i++)
+	if (lvl == 0)
 	{
-		for (int j = 0; j < 7; j++)
+		for (int i = 0; i < 7; i++)
 		{
-			if (c[i][j] == 0) continue;
-			vec3 boxCenter(-WallW / 2 + boxW + j * 0.8, WallH / 2 - boxH - margin - i * 0.6, 0);
-			if (ballPos.x + ballR >= boxCenter.x - boxW / 2 &&
-				ballPos.x - ballR <= boxCenter.x + boxW / 2 &&
-				ballPos.y + ballR >= boxCenter.y - boxH / 2 &&
-				ballPos.y - ballR <= boxCenter.y + boxH / 2)
+			for (int j = 0; j < 7; j++)
 			{
-				c[i][j]--;
-				float xOverlap = std::min(ballPos.x + ballR - (boxCenter.x - boxW / 2),
-					(boxCenter.x + boxW / 2) - (ballPos.x - ballR));
-				float yOverlap = std::min(ballPos.y + ballR - (boxCenter.y - boxH / 2),
-					(boxCenter.y + boxH / 2) - (ballPos.y - ballR));
+				if (c[i][j] == 0) continue;
+				vec3 boxCenter(-WallW / 2 + boxW + j * 0.8, WallH / 2 - boxH - margin - i * 0.6, 0);
+				if (ballPos.x + ballR >= boxCenter.x - boxW / 2 &&
+					ballPos.x - ballR <= boxCenter.x + boxW / 2 &&
+					ballPos.y + ballR >= boxCenter.y - boxH / 2 &&
+					ballPos.y - ballR <= boxCenter.y + boxH / 2)
+				{
+					c[i][j]--;
+					float xOverlap = std::min(ballPos.x + ballR - (boxCenter.x - boxW / 2),
+						(boxCenter.x + boxW / 2) - (ballPos.x - ballR));
+					float yOverlap = std::min(ballPos.y + ballR - (boxCenter.y - boxH / 2),
+						(boxCenter.y + boxH / 2) - (ballPos.y - ballR));
 
-				if (xOverlap < yOverlap)
-					ballVel.x = -ballVel.x;
-				else
-					ballVel.y = -ballVel.y;
+					if (xOverlap < yOverlap)
+						ballVel.x = -ballVel.x;
+					else
+						ballVel.y = -ballVel.y;
+				}
+
 			}
+		}
+	}
+	else if (lvl == 1)
+	{
+		for (int i = 0; i < 7; i++)
+		{
+			for (int j = 0; j < 7; j++)
+			{
+				if (a[i][j] == 0) continue;
+				vec3 boxCenter(-WallW / 2 + boxW + j * 0.8, WallH / 2 - boxH - margin - i * 0.6, 0);
+				if (ballPos.x + ballR >= boxCenter.x - boxW / 2 &&
+					ballPos.x - ballR <= boxCenter.x + boxW / 2 &&
+					ballPos.y + ballR >= boxCenter.y - boxH / 2 &&
+					ballPos.y - ballR <= boxCenter.y + boxH / 2)
+				{
+					a[i][j]--;
+					float xOverlap = std::min(ballPos.x + ballR - (boxCenter.x - boxW / 2),
+						(boxCenter.x + boxW / 2) - (ballPos.x - ballR));
+					float yOverlap = std::min(ballPos.y + ballR - (boxCenter.y - boxH / 2),
+						(boxCenter.y + boxH / 2) - (ballPos.y - ballR));
 
+					if (xOverlap < yOverlap)
+						ballVel.x = -ballVel.x;
+					else
+						ballVel.y = -ballVel.y;
+				}
+
+			}
 		}
 	}
 }
@@ -483,7 +523,20 @@ int Init()
 
 	return 0;
 }
-
+bool checkEndLvl()
+{
+	if (lvl == 0)
+	{
+		for (int i = 0; i < 7; i++)
+		{
+			for (int j = 0; j < 7; j++)
+			{
+				if (c[i][j] > 0) return false;
+			}
+		}
+	}
+	return true;
+}
 void Update(float dt)
 {
 	// add all tick code
@@ -494,6 +547,12 @@ void Update(float dt)
 	{
 		moveBall(dt);
 		handleCollision();
+		if(lvl == 0)
+		if (checkEndLvl())
+		{
+			firstStart = true;
+			lvl++;
+		}
 	}
 }
 float theta = 0;
@@ -524,11 +583,20 @@ void Render()
 	{
 		for (int j = 0; j < 7; j++)
 		{
-			if (c[i][j] == 0) continue;
+			if (lvl == 0)
+			{
+				if (c[i][j] == 0) continue;
+			}
+			else
+				if(a[i][j] == 0) continue;
+
 			ModelMat = glm::translate(glm::vec3( -WallW/2 + boxW + j * 0.8, WallH/2 - boxH - margin -  i * 0.6, 0 ));
 			glUniformMatrix4fv(modelMatLoc, 1, GL_FALSE, glm::value_ptr(ModelMat));
 			GLuint C_Location = glGetUniformLocation(boxProgramId, "c");
-			glUniform1i(C_Location, c[i][j]);
+			if(lvl == 0)
+				glUniform1i(C_Location, c[i][j]);
+			else
+				glUniform1i(C_Location, a[i][j]);
 			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL);
 		}
 	}
